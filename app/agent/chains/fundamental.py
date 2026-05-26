@@ -1,4 +1,5 @@
 import json
+import os
 from langchain_deepseek import ChatDeepSeek
 from langchain.agents import AgentExecutor, create_tool_calling_agent
 from langchain_core.prompts import ChatPromptTemplate
@@ -8,11 +9,11 @@ from app.agent.tools.tushare_tools import (
     get_industry_list, get_trade_calendar,
 )
 
-FUNDAMENTAL_PROMPT_FILE = "app/agent/prompts/fundamental.txt"
+_PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
 
 
 def _load_prompt() -> str:
-    with open(FUNDAMENTAL_PROMPT_FILE, "r", encoding="utf-8") as f:
+    with open(os.path.join(_PROMPT_DIR, "fundamental.txt"), "r", encoding="utf-8") as f:
         return f.read()
 
 

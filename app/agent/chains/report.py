@@ -1,13 +1,14 @@
 import json
+import os
 from langchain_deepseek import ChatDeepSeek
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-REPORT_PROMPT_FILE = "app/agent/prompts/report.txt"
+_PROMPT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "prompts")
 
 
 def _load_prompt() -> str:
-    with open(REPORT_PROMPT_FILE, "r", encoding="utf-8") as f:
+    with open(os.path.join(_PROMPT_DIR, "report.txt"), "r", encoding="utf-8") as f:
         return f.read()
 
 

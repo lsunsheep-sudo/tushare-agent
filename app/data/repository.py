@@ -7,6 +7,16 @@ from app.data.models import (
     Base, Strategy, TaskRun, Report, ScreeningResult, StockPool,
     TaskStatus, ReportType,
 )
+import math
+
+
+def _sanitize(value, default=None):
+    """将 NaN 转为 default，避免数据库写入报错"""
+    if value is None:
+        return default
+    if isinstance(value, float) and math.isnan(value):
+        return default
+    return value
 
 
 class Repository:
@@ -130,18 +140,21 @@ class Repository:
     def upsert_stocks(self, stocks: list[dict]) -> None:
         with self.get_session() as s:
             for stock in stocks:
+                name = _sanitize(stock.get("name", ""), "")
+                industry = _sanitize(stock.get("industry"), "")
+                list_date = _sanitize(stock.get("list_date"))
                 existing = s.query(StockPool).filter(StockPool.ts_code == stock["ts_code"]).first()
                 if existing:
-                    existing.name = stock["name"]
-                    existing.industry = stock.get("industry", "")
-                    existing.list_date = stock.get("list_date")
+                    existing.name = name
+                    existing.industry = industry
+                    existing.list_date = list_date
                     existing.updated_at = datetime.now(timezone.utc)
                 else:
                     s.add(StockPool(
                         ts_code=stock["ts_code"],
-                        name=stock["name"],
-                        industry=stock.get("industry", ""),
-                        list_date=stock.get("list_date"),
+                        name=name,
+                        industry=industry,
+                        list_date=list_date,
                     ))
             s.commit()
 

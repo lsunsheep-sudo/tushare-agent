@@ -1,0 +1,7 @@
+{
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "https://YOUR_RAILWAY_APP.up.railway.app/api/:path*" },
+    { "source": "/chat", "destination": "/chat.html" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

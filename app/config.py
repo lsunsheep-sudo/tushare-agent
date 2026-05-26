@@ -1,18 +1,19 @@
 # app/config.py
+from pydantic import Field
 from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
     # DeepSeek
-    DEEPSEEK_API_KEY: str
+    DEEPSEEK_API_KEY: str = Field(min_length=1)
     DEEPSEEK_BASE_URL: str = "https://api.deepseek.com"
     DEEPSEEK_MODEL: str = "deepseek-chat"
 
     # Tushare
-    TUSHARE_TOKEN: str
+    TUSHARE_TOKEN: str = Field(min_length=1)
 
     # Database
-    DATABASE_URL: str = "sqlite:///./data/tushare.db"
+    DATABASE_URL: str = "postgresql://user:pass@localhost:5432/tushare"
 
     # Scheduler
     SCHEDULER_DAILY_SCREEN_TIME: str = "15:30"

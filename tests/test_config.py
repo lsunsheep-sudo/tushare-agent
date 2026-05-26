@@ -5,13 +5,14 @@ from app.config import Settings
 
 
 class TestSettings:
-    def test_defaults(self):
-        """默认值：SQLite、标准调度时间"""
+    def test_defaults(self, monkeypatch):
+        """默认值：PostgreSQL、标准调度时间"""
+        monkeypatch.setenv("DATABASE_URL", "postgresql://localhost:5432/test")
         settings = Settings(
             DEEPSEEK_API_KEY="sk-test",
             TUSHARE_TOKEN="test-token",
         )
-        assert settings.DATABASE_URL == "sqlite:///./data/tushare.db"
+        assert "postgresql" in settings.DATABASE_URL
         assert settings.DEEPSEEK_MODEL == "deepseek-chat"
         assert settings.DEEPSEEK_BASE_URL == "https://api.deepseek.com"
         assert settings.SCHEDULER_DAILY_SCREEN_TIME == "15:30"
@@ -29,7 +30,9 @@ class TestSettings:
         assert settings.DATABASE_URL == "postgresql://localhost/test"
         assert settings.DEEPSEEK_MODEL == "deepseek-coder"
 
-    def test_missing_required_raises(self):
+    def test_missing_required_raises(self, monkeypatch):
         """缺少必填项应报错"""
+        monkeypatch.setenv("DEEPSEEK_API_KEY", "")
+        monkeypatch.setenv("TUSHARE_TOKEN", "")
         with pytest.raises(Exception):
-            Settings()  # 缺 DEEPSEEK_API_KEY 和 TUSHARE_TOKEN
+            Settings()

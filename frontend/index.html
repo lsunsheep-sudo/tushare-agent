@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tushare Agent - 仪表盘</title>
+    <script src="https://unpkg.com/alpinejs@3.13.5/dist/cdn.min.js" defer></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f5; color: #333; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { background: #1a1a2e; color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 24px; }
+        .header nav a { color: #a0a0ff; text-decoration: none; margin-left: 20px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        .card h3 { font-size: 16px; color: #666; margin-bottom: 10px; }
+        .card .value { font-size: 36px; font-weight: bold; color: #1a1a2e; }
+        .section { background: white; border-radius: 8px; padding: 20px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .section h2 { font-size: 18px; margin-bottom: 15px; border-bottom: 2px solid #1a1a2e; padding-bottom: 8px; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { text-align: left; padding: 10px; border-bottom: 1px solid #eee; }
+        th { color: #666; font-weight: 600; font-size: 14px; }
+        .btn { display: inline-block; padding: 8px 16px; background: #1a1a2e; color: white; border: none; border-radius: 4px; cursor: pointer; text-decoration: none; font-size: 14px; }
+        .btn:hover { background: #333; }
+        .status { display: inline-block; padding: 2px 8px; border-radius: 12px; font-size: 12px; }
+        .status.active { background: #d4edda; color: #155724; }
+        .status.inactive { background: #f8d7da; color: #721c24; }
+        .delete-btn { color: #e74c3c; cursor: pointer; font-size: 18px; border: none; background: none; }
+    </style>
+</head>
+<body x-data="dashboard" x-init="fetchAll()">
+    <div class="container">
+        <div class="header">
+            <h1>Tushare 智能选股 Agent</h1>
+            <nav>
+                <a href="/">仪表盘</a>
+                <a href="/chat">智能对话</a>
+            </nav>
+        </div>
+
+        <div class="cards">
+            <div class="card"><h3>策略总数</h3><div class="value" x-text="summary.strategy_count || '--'">--</div></div>
+            <div class="card"><h3>启用策略</h3><div class="value" x-text="summary.enabled_count || '--'">--</div></div>
+            <div class="card"><h3>最新报告</h3><div class="value" x-text="summary.recent_reports ? summary.recent_reports.length : '--'">--</div></div>
+        </div>
+
+        <div class="section">
+            <h2>选股策略</h2>
+            <template x-if="strategies.length === 0">
+                <p style="color:#999">暂无策略，请通过 API 创建</p>
+            </template>
+            <template x-if="strategies.length > 0">
+                <table>
+                    <thead><tr><th>名称</th><th>调度</th><th>状态</th><th>操作</th></tr></thead>
+                    <tbody>
+                        <template x-for="s in strategies" :key="s.id">
+                            <tr>
+                                <td x-text="s.name"></td>
+                                <td x-text="s.schedule"></td>
+                                <td>
+                                    <span class="status" :class="s.enabled ? 'active' : 'inactive'"
+                                          x-text="s.enabled ? '启用' : '禁用'"></span>
+                                </td>
+                                <td>
+                                    <button class="delete-btn" @click="deleteStrategy(s.id)" title="删除">&times;</button>
+                                </td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </template>
+        </div>
+
+        <div class="section">
+            <h2>最新报告</h2>
+            <template x-if="reports.length === 0">
+                <p style="color:#999">暂无报告，等待定时任务执行或手动触发</p>
+            </template>
+            <template x-if="reports.length > 0">
+                <table>
+                    <thead><tr><th>类型</th><th>摘要</th><th>时间</th></tr></thead>
+                    <tbody>
+                        <template x-for="r in reports" :key="r.id">
+                            <tr>
+                                <td x-text="r.type === 'screening' ? '选股' : '基本面'"></td>
+                                <td x-text="r.summary_text || r.summary || '(点击查看详情)'"></td>
+                                <td x-text="r.created_at?.slice(0, 16)"></td>
+                            </tr>
+                        </template>
+                    </tbody>
+                </table>
+            </template>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('alpine:init', () => {
+            Alpine.data('dashboard', () => ({
+                summary: {},
+                strategies: [],
+                reports: [],
+
+                async fetchAll() {
+                    await Promise.all([this.fetchSummary(), this.fetchStrategies(), this.fetchReports()]);
+                },
+
+                async fetchSummary() {
+                    try {
+                        const r = await fetch('/api/dashboard/summary');
+                        this.summary = await r.json();
+                    } catch(e) {}
+                },
+
+                async fetchStrategies() {
+                    try {
+                        const r = await fetch('/api/strategies');
+                        this.strategies = await r.json();
+                    } catch(e) {}
+                },
+
+                async fetchReports() {
+                    try {
+                        const r = await fetch('/api/reports?limit=10');
+                        this.reports = await r.json();
+                    } catch(e) {}
+                },
+
+                async deleteStrategy(id) {
+                    if (!confirm('确认删除此策略？')) return;
+                    try {
+                        await fetch(`/api/strategies/${id}`, { method: 'DELETE' });
+                        await this.fetchStrategies();
+                    } catch(e) {}
+                },
+            }));
+        });
+    </script>
+</body>
+</html>

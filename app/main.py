@@ -1,8 +1,7 @@
 import logging
 from contextlib import asynccontextmanager
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import Settings
 from app.data.tushare_client import TushareClient
@@ -23,7 +22,6 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 settings = Settings()
-templates = Jinja2Templates(directory="app/web/templates")
 
 # ── Initialize all layers ──
 
@@ -82,7 +80,15 @@ async def lifespan(app: FastAPI):
     shutdown_scheduler()
 
 
-app = FastAPI(title="Tushare Agent", lifespan=lifespan)
+app = FastAPI(title="Tushare Agent API", lifespan=lifespan)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # ── Mount API routes ──
 
@@ -90,16 +96,6 @@ app.include_router(strategies_api.router)
 app.include_router(reports_api.router)
 app.include_router(chat_api.router)
 app.include_router(dashboard_api.router)
-
-
-@app.get("/", response_class=HTMLResponse)
-async def dashboard_page(request: Request):
-    return templates.TemplateResponse("dashboard.html", {"request": request})
-
-
-@app.get("/chat", response_class=HTMLResponse)
-async def chat_page(request: Request):
-    return templates.TemplateResponse("chat.html", {"request": request})
 
 
 @app.get("/health")
