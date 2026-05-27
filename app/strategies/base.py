@@ -18,8 +18,6 @@ class StrategyParams:
 class BaseStrategy(ABC):
     """所有策略的基类"""
 
-    params: StrategyParams
-
     @abstractmethod
     def run(self, pro, start_date: str, end_date: str) -> pd.DataFrame:
         """执行策略，返回带 score 列的 DataFrame"""

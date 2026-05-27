@@ -19,6 +19,14 @@ logger = logging.getLogger(__name__)
 
 API_DELAY = 0.08
 
+# 评分权重
+SCORE_WAVE_WEIGHT = 0.35
+SCORE_PULLBACK_WEIGHT = 0.35
+SCORE_POSITION_WEIGHT = 0.20
+SCORE_LIMIT_UP_WEIGHT = 0.10
+SCORE_LIMIT_UP_CAP = 5
+SCORE_LIMIT_UP_MULTIPLIER = 2
+
 
 @dataclass
 class QiangshiguParams(StrategyParams):
@@ -49,7 +57,6 @@ class QiangshiguStrategy(BaseStrategy):
 
     def _get_all_stocks(self, pro) -> pd.DataFrame:
         """获取所有上市股票（含北交所），过滤上市不足60天的新股"""
-        time.sleep(API_DELAY)
         df_main = pro.stock_basic(
             exchange="", list_status="L", fields="ts_code,name,market,list_date"
         )
@@ -64,6 +71,7 @@ class QiangshiguStrategy(BaseStrategy):
         today = datetime.now().strftime("%Y%m%d")
         df["list_days"] = (pd.to_datetime(today) - pd.to_datetime(df["list_date"])).dt.days
         df = df[df["list_days"] >= 60].copy()
+        time.sleep(API_DELAY)
         return df
 
     def _get_stock_data(self, pro, ts_code: str, start_date: str, end_date: str) -> pd.DataFrame:
@@ -83,10 +91,12 @@ class QiangshiguStrategy(BaseStrategy):
             self._cache[cache_key] = df
             return df
         except Exception as e:
-            if "800次" in str(e):
+            err_msg = str(e)
+            if "800次" in err_msg or "每秒请求次数" in err_msg:
                 logger.warning("达到API调用上限，等待60秒后重试...")
                 time.sleep(60)
                 return self._get_stock_data(pro, ts_code, start_date, end_date)
+            logger.error("获取 %s 日线数据失败: %s", ts_code, err_msg[:200])
             self._cache[cache_key] = pd.DataFrame()
             return pd.DataFrame()
 
@@ -186,7 +196,7 @@ class QiangshiguStrategy(BaseStrategy):
             # ========== 计算实战指标 ==========
             # 当前位置（相对于13天高低点的百分比）
             wave_low = recent_wave["low"].min()
-            if (wave_high - wave_low) > 0:
+            if wave_high != wave_low:
                 current_position = (latest_close - wave_low) / (wave_high - wave_low)
             else:
                 current_position = 0
@@ -201,10 +211,10 @@ class QiangshiguStrategy(BaseStrategy):
 
             # ========== 评分 ==========
             score = round(
-                wave_gain * 100 * 0.35
-                + pullback_pct * 100 * 0.35
-                + (100 - current_position * 100) * 0.2
-                + min(limit_up_count, 5) * 2 * 0.1,
+                wave_gain * 100 * SCORE_WAVE_WEIGHT
+                + pullback_pct * 100 * SCORE_PULLBACK_WEIGHT
+                + (100 - current_position * 100) * SCORE_POSITION_WEIGHT
+                + min(limit_up_count, SCORE_LIMIT_UP_CAP) * SCORE_LIMIT_UP_MULTIPLIER * SCORE_LIMIT_UP_WEIGHT,
                 2,
             )
 
