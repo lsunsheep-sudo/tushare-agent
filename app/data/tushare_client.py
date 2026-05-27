@@ -108,6 +108,49 @@ class TushareClient:
         kwargs["fields"] = "ts_code,ann_date,end_date,revenue,operate_profit,total_profit,n_income,basic_eps"
         return self._call_with_retry(self.pro.income, **kwargs)
 
+    def get_daily(
+        self, ts_code: str = "", trade_date: str = "",
+        start_date: str = "", end_date: str = ""
+    ) -> pd.DataFrame:
+        kwargs = {}
+        if ts_code:
+            kwargs["ts_code"] = ts_code
+        if trade_date:
+            kwargs["trade_date"] = trade_date
+        if start_date:
+            kwargs["start_date"] = start_date
+        if end_date:
+            kwargs["end_date"] = end_date
+        return self._call_with_retry(self.pro.daily, **kwargs)
+
+    def get_moneyflow(
+        self, ts_code: str = "", trade_date: str = "",
+        start_date: str = "", end_date: str = ""
+    ) -> pd.DataFrame:
+        kwargs = {}
+        if ts_code:
+            kwargs["ts_code"] = ts_code
+        if trade_date:
+            kwargs["trade_date"] = trade_date
+        if start_date:
+            kwargs["start_date"] = start_date
+        if end_date:
+            kwargs["end_date"] = end_date
+        return self._call_with_retry(self.pro.moneyflow, **kwargs)
+
+    def get_limit_list_d(
+        self, trade_date: str = "", ts_code: str = "",
+        limit_type: str = ""
+    ) -> pd.DataFrame:
+        kwargs = {}
+        if trade_date:
+            kwargs["trade_date"] = trade_date
+        if ts_code:
+            kwargs["ts_code"] = ts_code
+        if limit_type:
+            kwargs["limit_type"] = limit_type
+        return self._call_with_retry(self.pro.limit_list_d, **kwargs)
+
     def get_trade_cal(self, exchange: str = "", start_date: str = "", end_date: str = "") -> pd.DataFrame:
         kwargs = {"is_open": "1"}
         if exchange:
