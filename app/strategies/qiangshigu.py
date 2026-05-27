@@ -17,7 +17,7 @@ from app.strategies.base import BaseStrategy, StrategyParams
 
 logger = logging.getLogger(__name__)
 
-API_DELAY = 0.08
+API_DELAY = 0.15
 
 # 评分权重
 SCORE_WAVE_WEIGHT = 0.35
@@ -92,7 +92,7 @@ class QiangshiguStrategy(BaseStrategy):
             return df
         except Exception as e:
             err_msg = str(e)
-            if "800次" in err_msg or "每秒请求次数" in err_msg:
+            if "800次" in err_msg or "频率超限" in err_msg:
                 logger.warning("达到API调用上限，等待60秒后重试...")
                 time.sleep(60)
                 return self._get_stock_data(pro, ts_code, start_date, end_date)
