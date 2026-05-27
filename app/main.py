@@ -44,7 +44,7 @@ strategies_api.init(repo)
 reports_api.init(repo)
 chat_api.init(router)
 dashboard_api.init(repo)
-init_jobs(repo, router)
+init_jobs(repo, router, tushare_client.pro, email_sender, wechat_bot)
 
 
 @asynccontextmanager
