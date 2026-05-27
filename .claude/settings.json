@@ -6,7 +6,8 @@
       "Read(//c/Users/24490/AppData/Local/Temp/claude/e--Claude---tushare/189ce6b2-d357-446e-966b-c56ba2284801/tasks/**)",
       "Bash(\"./.venv/Scripts/python.exe\" -m pytest tests/test_config.py -v)",
       "Bash(python -m pytest tests/test_config.py -v)",
-      "Bash(\"E:/Claude文件/tushare/.venv/Scripts/pip\" install *)"
+      "Bash(\"E:/Claude文件/tushare/.venv/Scripts/pip\" install *)",
+      "Bash(git push *)"
     ]
   }
 }
