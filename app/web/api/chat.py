@@ -27,6 +27,16 @@ async def chat(req: ChatRequest):
     if _router is None:
         return {"error": "Agent not initialized"}
 
+    # Check for strategy execution intent first
+    strategy_result = _router.run_strategy_for_message(req.message)
+    if strategy_result is not None:
+        async def strategy_generator():
+            # Stream the report text word by word for SSE effect
+            for chunk in strategy_result:
+                yield {"event": "message", "data": chunk}
+        return EventSourceResponse(strategy_generator())
+
+    # Fall through to general query
     async def event_generator():
         async for event in _router.run_query_stream(req.message):
             yield {"event": "message", "data": event.replace("data: ", "")}

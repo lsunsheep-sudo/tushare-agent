@@ -44,6 +44,10 @@ strategies_api.init(repo)
 reports_api.init(repo)
 chat_api.init(router)
 dashboard_api.init(repo)
+
+# Set up strategies for chat triggering
+from app.strategies.qiangshigu import QiangshiguStrategy
+router.set_strategies(tushare_client.pro, {"强势股回调战法": QiangshiguStrategy()})
 init_jobs(repo, router, tushare_client.pro, email_sender, wechat_bot)
 
 
