@@ -92,6 +92,48 @@ def get_industry_list() -> str:
 
 
 @tool
+def get_daily_data(ts_code: str, start_date: str = "", end_date: str = "") -> str:
+    """获取个股日线行情数据：开高低收、成交量、涨跌幅、换手率。
+    参数 ts_code：股票代码如'600519.SH'，start_date/end_date：日期范围YYYYMMDD。
+    返回最近60条记录。"""
+    client = _get_client()
+    ts_code = client._format_ts_code(ts_code)
+    df = client.get_daily(ts_code=ts_code, start_date=start_date, end_date=end_date)
+    if df.empty:
+        return json.dumps({"error": f"未找到 {ts_code} 的日线数据"}, ensure_ascii=False)
+    df = df.sort_values("trade_date", ascending=False).head(60)
+    return df.to_json(orient="records", force_ascii=False)
+
+
+@tool
+def get_moneyflow(ts_code: str, start_date: str = "", end_date: str = "") -> str:
+    """获取个股资金流向：主力净流入、超大单净流入、小单净流入等。
+    参数 ts_code：股票代码，start_date/end_date：日期范围YYYYMMDD。
+    用于判断主力资金动向。"""
+    client = _get_client()
+    ts_code = client._format_ts_code(ts_code)
+    df = client.get_moneyflow(ts_code=ts_code, start_date=start_date, end_date=end_date)
+    if df.empty:
+        return json.dumps({"error": f"未找到 {ts_code} 的资金流向数据"}, ensure_ascii=False)
+    df = df.sort_values("trade_date", ascending=False).head(60)
+    return df.to_json(orient="records", force_ascii=False)
+
+
+@tool
+def get_limit_list(trade_date: str = "") -> str:
+    """获取每日涨跌停股票列表，包含涨停/跌停/炸板股票及所属行业。
+    可用于判断市场热点和炒作情绪。
+    参数 trade_date：交易日期YYYYMMDD，空表示最新。"""
+    client = _get_client()
+    if not trade_date:
+        trade_date = client.get_latest_trade_date()
+    df = client.get_limit_list_d(trade_date=trade_date)
+    if df.empty:
+        return json.dumps({"error": f"未找到 {trade_date} 的涨跌停数据"}, ensure_ascii=False)
+    return df.head(200).to_json(orient="records", force_ascii=False)
+
+
+@tool
 def get_trade_calendar(start_date: str, end_date: str) -> str:
     """获取交易日历，返回指定日期范围内的交易日列表。
     参数 start_date/end_date：日期格式 'YYYYMMDD'。"""
